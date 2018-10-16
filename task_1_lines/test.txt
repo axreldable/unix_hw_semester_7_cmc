@@ -26,27 +26,57 @@ void r_realloc(char *array, int i) {
     }
 }
 
-char *read_input() {
-    int c;
+//void r_realloc(char **array, int i) {
+//    *array = realloc(*array, i + sizeof(char *));
+//    if (*array == NULL) {
+//        perror("realloc - fail");
+//        exit(EXIT_FAILURE);
+//    }
+//}
+
+char *read_input(size_t start_size) {
     char *str;
-    int i = 0;
-
-    str = malloc(sizeof(char *));
-    if (str == NULL) {
-        perror("malloc - fail");
-        exit(EXIT_FAILURE);
+    int ch;
+    size_t len = 0;
+    str = realloc(NULL, sizeof(char) * start_size);
+    if (!str) {
+        return str;
     }
-
-    while ((c = getchar()) != EOF) {
-        str[i] = c;
-        r_realloc(str, i);
-        i++;
+    while ((ch = getchar()) != EOF) {
+        str[len++] = ch;
+        if (len == start_size) {
+            str = realloc(str, sizeof(char) * (start_size += 16));
+            if (!str) {
+                return str;
+            }
+        }
     }
-    r_realloc(str, i);
-    str[i] = 0; // end of line
+    str[len++] = '\0';
 
-    return str;
+    return realloc(str, sizeof(char) * len);
 }
+//
+//char *read_input() {
+//    int c;
+//    char *str;
+//    int i = 0;
+//
+//    str = (char *) malloc(sizeof(char));
+//    if (str == NULL) {
+//        perror("malloc - fail");
+//        exit(EXIT_FAILURE);
+//    }
+//
+//    while ((c = getchar()) != EOF) {
+//        str[i] = c;
+//        r_realloc(str, i);
+//        i++;
+//    }
+//    r_realloc(str, i);
+//    str[i] = 0; // end of line
+//
+//    return str;
+//}
 
 int count_words_in(char const *string) {
     int counter = 0;
@@ -107,23 +137,23 @@ void string_to_words(char const *string, char *words[]) {
 }
 
 int main() {
-    char *input_string = read_input();
+    char *input_string = read_input(10);
     printf("\nInput string = \"%s\".\n", input_string);
 
-    int count = count_words_in(input_string);
-    printf("%d words in input string.\n", count);
-
-    char *words[count];
-    string_to_words(input_string, words);
-    free(input_string); // not need input string any more
-    printf("Input words:\n");
-    print_array(words, count);
-
-    size_t stringLen = sizeof(words) / sizeof(char *);
-    qsort(words, stringLen, sizeof(char *), words_compare);
-
-    printf("\nSorted words:\n");
-    print_array(words, count);
+//    int count = count_words_in(input_string);
+//    printf("%d words in input string.\n", count);
+//
+//    char *words[count];
+//    string_to_words(input_string, words);
+//    free(input_string); // not need input string any more
+//    printf("Input words:\n");
+//    print_array(words, count);
+//
+//    size_t stringLen = sizeof(words) / sizeof(char *);
+//    qsort(words, stringLen, sizeof(char *), words_compare);
+//
+//    printf("\nSorted words:\n");
+//    print_array(words, count);
 
     return 0;
 }
