@@ -63,7 +63,7 @@ int wcForFile(char * name) {
     //putchar(prev);
     numberOfSymbols += 1;
     if (prev == L'\n') numberOfLines += 1;
-    if (prev != '\n' || !iswspace(prev)) numberOfWords += 1; // начало первого слова
+    if (prev != L'\n' || !iswspace(prev)) numberOfWords += 1; // начало первого слова
     int tek;
     while((tek = fgetc(f)) != EOF) {
         if (((iswspace(prev)) || (prev == L'\n')) && ((!iswspace(tek)) && (tek != L'\n'))) {
