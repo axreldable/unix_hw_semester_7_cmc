@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <wctype.h>
 
 int wcForFile (char *);
 char * createFile();
@@ -61,15 +62,15 @@ int wcForFile(char * name) {
     if (prev == EOF) return 0;
     //putchar(prev);
     numberOfSymbols += 1;
-    if (prev == '\n') numberOfLines += 1;
-    if (prev != '\n' || prev != ' ') numberOfWords += 1; // начало первого слова
+    if (prev == L'\n') numberOfLines += 1;
+    if (prev != '\n' || !iswspace(prev)) numberOfWords += 1; // начало первого слова
     int tek;
     while((tek = fgetc(f)) != EOF) {
-        if (((prev == ' ') || (prev == '\n')) && ((tek != ' ') && (tek != '\n'))) {
+        if (((iswspace(prev)) || (prev == L'\n')) && ((!iswspace(tek)) && (tek != L'\n'))) {
             numberOfWords += 1;
         }
         numberOfSymbols += 1;
-        if (tek == '\n') numberOfLines += 1;
+        if (tek == L'\n') numberOfLines += 1;
         prev = tek;
     }
     return 1;
