@@ -112,6 +112,8 @@ void ls(char *path) {
             printf("%s  ", file->d_name);
         }
     }
+    free(file);
+    free(dir);
 }
 
 void ls_r(char path[]) {
@@ -133,6 +135,8 @@ void ls_r(char path[]) {
             ls_r(tmp);
         }
     }
+    free(file);
+    free(dir);
 }
 
 int main(int argc, char *argv[]) {
@@ -165,6 +169,7 @@ int main(int argc, char *argv[]) {
             if (is_r) {
                 ls_r(argv[i]);
             } else {
+                printf("\n%s:\n", argv[i]);
                 ls(argv[i]);
             }
         }
