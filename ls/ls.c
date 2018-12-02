@@ -37,101 +37,13 @@ void print_perms(mode_t st) {
     printf("%s", perms);
 }
 
-//void ls(char path[], int flag) {
-//    DIR *dir;
-//    struct dirent *file;
-//    dir = opendir(path);
-//    while (file = readdir(dir)) {
-//        if (file->d_name[0] != '.' || flag) {
-//            printf("%s  ", file->d_name);
-//        }
-//    }
-//    free(file);
-//    free(dir);
-//}
-
-void ls_l(char path[]) {
-    DIR *dir;
-    struct dirent *file;
-    struct stat sbuf;
-    char buf[128];
-    struct passwd pwent, *pwentp;
-    struct group grp, *grpt;
-    char datestring[256];
-    struct tm time;
-    dir = opendir(path);
-    while (file = readdir(dir)) {
-        stat(file->d_name, &sbuf);
-        print_perms(sbuf.st_mode);
-        printf(" %d", (int) sbuf.st_nlink);
-        if (!getpwuid_r(sbuf.st_uid, &pwent, buf, sizeof(buf), &pwentp))
-            printf(" %s", pwent.pw_name);
-        else
-            printf(" %d", sbuf.st_uid);
-
-        if (!getgrgid_r(sbuf.st_gid, &grp, buf, sizeof(buf), &grpt))
-            printf(" %s", grp.gr_name);
-        else
-            printf(" %d", sbuf.st_gid);
-        printf(" %5d", (int) sbuf.st_size);
-
-        localtime_r(&sbuf.st_mtime, &time);
-        /* Get localized date string. */
-        strftime(datestring, sizeof(datestring), "%F %T", &time);
-
-        printf(" %s %s\n", datestring, file->d_name);
-    }
-}
-
-void ls_r(char path[]) {
-    DIR *dir;
-    struct dirent *file;
-    struct stat sbuf;
-    char tmp[128];
-    dir = opendir(path);
-    while (file = readdir(dir)) {
-        if (file->d_name[0] == '.') continue;
-        strcpy(tmp, path);
-        strcat(tmp, "/");
-        strcat(tmp, file->d_name);
-        //printf("%s\n", tmp);
-        stat(tmp, &sbuf);
-        if (sbuf.st_mode && S_ISDIR(sbuf.st_mode)) {
-            printf("\n%s/\n", tmp);
-            ls_r(tmp);
-        } else
-            printf("%s  ", file->d_name);
-    }
-}
-
-//int main(int argc, char *argv[]) {
-//    char pathname[128];
-//    getcwd(pathname, 128);
-//    if (argc == 1) {
-//        ls(pathname, 0);
-//    } else {
-//        if (strcmp(argv[1], "-l") == 0) {
-//            ls_l(pathname);
-//        } else if (strcmp(argv[1], "-r") == 0) {
-//            ls_r(pathname);
-//        } else {
-//            ls(pathname, 1);  // ls -a
-//        }
-//    }
-//    printf("\n");
-//    return 0;
-//}
-
 void init_flag(const char flag) {
     if (flag == 'a') {
         is_a = 1;
-//        printf("activate a\n");
     } else if (flag == 'l') {
         is_l = 1;
-//        printf("activate l\n");
     } else if (flag == 'R') {
         is_r = 1;
-//        printf("activate r\n");
     } else {
         printf("Unknown flag: %c. Will ignore it.\n", flag);
     }
@@ -157,62 +69,91 @@ int is_flags(const char arg[]) {
     }
 }
 
-void ls(char *path) {
-    printf("ls for dir/file: %s\n", path);
-    DIR *dir;
-    struct dirent *file;
+void print_l(struct dirent *file) {
     struct stat sbuf;
     char buf[128];
-    char tmp[128];
     struct passwd pwent, *pwentp;
     struct group grp, *grpt;
     char datestring[256];
     struct tm time;
+
+    stat(file->d_name, &sbuf);
+    print_perms(sbuf.st_mode);
+    printf(" %d", (int) sbuf.st_nlink);
+    if (!getpwuid_r(sbuf.st_uid, &pwent, buf, sizeof(buf), &pwentp))
+        printf(" %s", pwent.pw_name);
+    else
+        printf(" %d", sbuf.st_uid);
+
+    if (!getgrgid_r(sbuf.st_gid, &grp, buf, sizeof(buf), &grpt))
+        printf(" %s", grp.gr_name);
+    else
+        printf(" %d", sbuf.st_gid);
+    printf(" %5d", (int) sbuf.st_size);
+
+    localtime_r(&sbuf.st_mtime, &time);
+    /* Get localized date string. */
+    strftime(datestring, sizeof(datestring), "%F %T", &time);
+
+    printf(" %s %s\n", datestring, file->d_name);
+}
+
+void ls(char *path) {
+    DIR *dir;
+    struct dirent *file;
     dir = opendir(path);
     while (file = readdir(dir)) {
         if (!is_a && file->d_name[0] == '.') {
             continue;
         }
         if (is_l) {
-            stat(file->d_name, &sbuf);
-            print_perms(sbuf.st_mode);
-            printf(" %d", (int) sbuf.st_nlink);
-            if (!getpwuid_r(sbuf.st_uid, &pwent, buf, sizeof(buf), &pwentp))
-                printf(" %s", pwent.pw_name);
-            else
-                printf(" %d", sbuf.st_uid);
-
-            if (!getgrgid_r(sbuf.st_gid, &grp, buf, sizeof(buf), &grpt))
-                printf(" %s", grp.gr_name);
-            else
-                printf(" %d", sbuf.st_gid);
-            printf(" %5d", (int) sbuf.st_size);
-
-            localtime_r(&sbuf.st_mtime, &time);
-            /* Get localized date string. */
-            strftime(datestring, sizeof(datestring), "%F %T", &time);
-
-            printf(" %s %s\n", datestring, file->d_name);
+            print_l(file);
         } else {
             printf("%s  ", file->d_name);
         }
     }
 }
 
-char *currnet_dir() {
-    char pathname[128];
-    getcwd(pathname, 128);
+void ls_r(char path[]) {
+    DIR *dir;
+    struct dirent *file;
+    struct stat sbuf;
+    char tmp[128];
+    dir = opendir(path);
+    while (file = readdir(dir)) {
+        if (file->d_name[0] == '.') continue;
+        strcpy(tmp, path);
+        strcat(tmp, "/");
+        strcat(tmp, file->d_name);
+        //printf("%s\n", tmp);
+        stat(tmp, &sbuf);
+        if (sbuf.st_mode && S_ISDIR(sbuf.st_mode)) {
+            ls(path);
+            printf("\n%s:\n", tmp);
+            ls_r(tmp);
+        }
+    }
 }
 
 int main(int argc, char *argv[]) {
+    char pathname[128];
+    getcwd(pathname, 128);
     if (argc == 1) { // ls
-        ls(currnet_dir());
+        ls(pathname);
     } else if (argc == 2) { // ls some
         if (is_flags(argv[1])) {
             init_flags(argv[1]);
-            ls(currnet_dir());
+            if (is_r) {
+                ls_r(pathname);
+            } else {
+                ls(pathname);
+            }
         } else {
-            ls(argv[1]);
+            if (is_r) {
+                ls_r(argv[1]);
+            } else {
+                ls(argv[1]);
+            }
         }
     } else { // ls some some...
         int i = 1;
@@ -221,7 +162,11 @@ int main(int argc, char *argv[]) {
             i = 2;
         }
         for (; i < argc; i++) {
-            ls(argv[i]);
+            if (is_r) {
+                ls_r(argv[i]);
+            } else {
+                ls(argv[i]);
+            }
         }
     }
     printf("\n");
