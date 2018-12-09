@@ -383,54 +383,53 @@ void *sieve(void *param) {
 }
 
 int main(int argc, char *argv[]) {
-
-    //Verify 3 args were passed in
     if (argc < 3) {
-        fprintf(stderr, "USAGE: ./a.out from to\n");
+        fprintf(stderr, "USAGE: ./a.out number_of_threads=[1,5], max_number=[10, 10000] to\n");
         exit(1);
     }
 
-    char *from = argv[1];
-    char *to = argv[2];
-
-    char *param = combine(from, to);
-
-    pthread_t tid;       //Thread ID
-    pthread_attr_t attr; //Set of thread attributes
-
-    printf("Prime Numbers: \n");
-
-    //Get the default attributes
-    pthread_attr_init(&attr);
-    //Create the thread
-    pthread_create(&tid, &attr, sieve, param);
-    //Wait for the thread to exit
-    pthread_join(tid, NULL);
-    printf("\nComplete\n");
-}
-
-//The thread will begin control in this function
-void *runner(void *param) {
-    int i, j, upper = atoi(param);
-    /* Check to see if a number is prime */
-    for (i = 2; i < upper; i++) {
-        int trap = 0;
-        /* Check each number for divisibility */
-        for (j = 2; j < i; j++) {
-            int result = i % j;
-            /* If any of the numbers divide cleanly
-                then this number is not prime. So
-                stop checking. */
-            if (result == 0) {
-                trap = 1;
-                break;
-            }
-        }
-        //No numbers divided cleanly so this number must be prime
-        if (trap == 0) {
-            printf("[%d] ", i);
-        }
+    int number_of_threads = atoi(argv[1]);
+    if (number_of_threads < 1 || number_of_threads > 5) {
+        fprintf(stderr, "USAGE: ./a.out number_of_threads=[1,5], max_number=[10, 10000] to\n");
+        exit(1);
     }
-    //Exit the thread
-    pthread_exit(0);
+
+    int max_number = atoi(argv[2]);
+    if (max_number < 10 || max_number > 10000) {
+        fprintf(stderr, "USAGE: ./a.out number_of_threads=[1,5], max_number=[10, 10000] to\n");
+        exit(1);
+    }
+
+    pthread_t th_ids[number_of_threads];
+    pthread_attr_t attrs[number_of_threads];
+
+    int chunkSize = max_number / number_of_threads;
+    for (int i = 0; i < number_of_threads; i++) {
+        int start = i * chunkSize;
+        int end = start + chunkSize - 1;
+        if (i == number_of_threads - 1) {
+            end = max_number - 1;
+        }
+
+//        printf("%d - %d", start+1, end+1);
+
+        char from[10];
+        sprintf(from, "%d", start+1);
+
+        char to[10];
+        sprintf(to, "%d", end+1);
+
+        char *param = combine(from, to);
+        //Get the default attributes
+        pthread_attr_init(&attrs[i]);
+        //Create the thread
+        pthread_create(&th_ids[i], &attrs[i], sieve, param);
+        printf("\n");
+    }
+
+    for (int i = 0; i < number_of_threads; i++) {
+        pthread_join(th_ids[i], NULL);
+    }
+
+    printf("\nComplete\n");
 }
