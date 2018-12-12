@@ -18,25 +18,40 @@ int strings(char *name, size_t start_size, int length) {
     }
     int ch;
     while ((ch = fgetc(f)) != EOF) {
-//        printf("!%c", ch);
-        str[len++] = ch;
-        if (len == start_size) {
-            str = realloc(str, sizeof(char) * (start_size += 16));
-            if (!str) {
-                perror("not enough memory");
+//        if ((ch >= 32 && ch <= 125) || ch == '\t' || ch == '\n') {
+            if ((ch >= 65 && ch <= 90) || (ch >= 97 && ch <= 122)) {
+//            printf("!%d", ch);
+            str[len++] = ch;
+            if (len == start_size) {
+                str = realloc(str, sizeof(char) * (start_size += 16));
+                if (!str) {
+                    perror("not enough memory");
+                }
             }
-        }
-        if (ch == '\n') {
-            str[len++] = '\0';
-            if (len >= length + 2) {
+            if (ch == '\n') {
+                str[len++] = '\0';
+                if (len >= length + 2) {
+                    printf("%s", str);
+                }
+                len = 0;
+                str = realloc(NULL, sizeof(char) * start_size);
+                if (!str) {
+                    perror("not enough memory");
+                }
+            }
+        } else {
+            if (len >= length) {
+                str[len++] = '\n';
+                str[len++] = '\0';
                 printf("%s", str);
-            }
-            len = 0;
-            str = realloc(NULL, sizeof(char) * start_size);
-            if (!str) {
-                perror("not enough memory");
+                len = 0;
+                str = realloc(NULL, sizeof(char) * start_size);
+                if (!str) {
+                    perror("not enough memory");
+                }
             }
         }
+
     }
 
     return 0;
