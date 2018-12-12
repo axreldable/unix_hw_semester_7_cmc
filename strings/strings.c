@@ -18,8 +18,7 @@ int strings(char *name, size_t start_size, int length) {
     }
     int ch;
     while ((ch = fgetc(f)) != EOF) {
-//        if ((ch >= 32 && ch <= 125) || ch == '\t' || ch == '\n') {
-            if ((ch >= 65 && ch <= 90) || (ch >= 97 && ch <= 122)) {
+        if (ch == '\t' || (ch >= 32 && ch < 127)) {
 //            printf("!%d", ch);
             str[len++] = ch;
             if (len == start_size) {
@@ -49,6 +48,8 @@ int strings(char *name, size_t start_size, int length) {
                 if (!str) {
                     perror("not enough memory");
                 }
+            } else {
+                len = 0;
             }
         }
 
