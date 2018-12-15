@@ -14,6 +14,8 @@
 #define TRUE   1
 #define FALSE  0
 
+// telnet localhost port
+
 int main(int argc, char *argv[]) {
     if (argc != 2) {
         fprintf(stderr, "USAGE: ./a.out port\n");
