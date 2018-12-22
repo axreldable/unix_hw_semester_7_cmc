@@ -64,24 +64,53 @@ char *replaceWord(const char *s, const char *oldW,
 
 
 int main(int argc, char **argv) {
-    if (argc < 4) {
-        fprintf(stderr, "USAGE: ./a.out pattern change file_list\n");
-        exit(1);
-    }
+    if (argc == 3) { // process std_in
+        char *pattern = argv[1];
+        char *change = argv[2];
+        size_t start_size = 10;
 
-    char *pattern = argv[1];
-    char *change = argv[2];
+        char *str;
+        int ch;
+        size_t len = 0;
+        str = realloc(NULL, sizeof(char) * start_size);
+        if (!str) {
+            perror("not enough memory");
+        }
+        while ((ch = getchar()) != EOF) {
+            str[len++] = ch;
+            if (len == start_size) {
+                str = realloc(str, sizeof(char) * (start_size += 16));
+                if (!str) {
+                    perror("not enough memory");
+                }
+            }
+            if (ch == '\n') {
+                str[len++] = '\0';
+                char *result = NULL;
 
-    for (int i = 3; i < argc; i++) {
-        char *str = read_file(argv[i], 10);
-        char *result = NULL;
+                result = replaceWord(str, pattern, change);
+                printf("%s", result);
+
+                free(result);
+                str = realloc(NULL, sizeof(char) * start_size);
+                len = 0;
+            }
+        }
+    } else { // process args
+        char *pattern = argv[1];
+        char *change = argv[2];
+
+        for (int i = 3; i < argc; i++) {
+            char *str = read_file(argv[i], 10);
+            char *result = NULL;
 
 //        printf("Old string: %sn", str);
 
-        result = replaceWord(str, pattern, change);
-        printf("%s", result);
+            result = replaceWord(str, pattern, change);
+            printf("%s", result);
 
-        free(result);
+            free(result);
+        }
     }
     return 0;
 }
