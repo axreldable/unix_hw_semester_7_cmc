@@ -59,15 +59,13 @@ int main(int argc, char **argv) {
         char * nameOfMyFile = createFile();
         tail(nameOfMyFile, 10);
         remove(nameOfMyFile); // удаляем файл
-    } else if (argc < 2) {
-        fprintf(stderr, "USAGE: ./a.out file_list\n");
-        exit(1);
-    }
-    if (argc > 2) {
-        print_name = 1;
-    }
+    } else {
+        if (argc > 2) {
+            print_name = 1;
+        }
 
-    for (int i = 1; i < argc; i++) {
-        tail(argv[i], 10);
+        for (int i = 1; i < argc; i++) {
+            tail(argv[i], 10);
+        }
     }
 }
