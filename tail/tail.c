@@ -5,6 +5,18 @@
 #define SIZE 100
 int print_name = 0;
 
+// функция считывает с консоли в файл и возвращает его имя
+char * createFile() {
+    char * fileName = "temp.txt";
+    FILE * f = fopen(fileName, "w");
+    int c;
+    while ((c = getchar()) != EOF) {
+        fputc(c, f);
+    }
+    fclose(f);
+    return fileName;
+}
+
 int tail(char *name, int n) {
     FILE *in;
     in = fopen(name, "r");
@@ -30,7 +42,7 @@ int tail(char *name, int n) {
         while (pos) {
             if (!fseek(in, --pos, SEEK_SET)) {
                 if (fgetc(in) == '\n')
-                    if (count++ >= n - 1)
+                    if (count++ > n - 1)
                         break;
             } else
                 perror("fseek() failed");
@@ -42,7 +54,12 @@ int tail(char *name, int n) {
 }
 
 int main(int argc, char **argv) {
-    if (argc < 2) {
+    if (argc == 1) {
+// если функция без аргументов, то будем работать с временным файлом
+        char * nameOfMyFile = createFile();
+        tail(nameOfMyFile, 10);
+        remove(nameOfMyFile); // удаляем файл
+    } else if (argc < 2) {
         fprintf(stderr, "USAGE: ./a.out file_list\n");
         exit(1);
     }
