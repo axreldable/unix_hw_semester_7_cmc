@@ -77,7 +77,11 @@ void print_l(struct dirent *file) {
     char datestring[256];
     struct tm time;
 
-    stat(file->d_name, &sbuf);
+    if (stat(file->d_name, &sbuf) < 0) {
+        puts(file->d_name);
+        perror("stat error");
+        exit(1);
+    }
     print_perms(sbuf.st_mode);
     printf(" %d", (int) sbuf.st_nlink);
     if (!getpwuid_r(sbuf.st_uid, &pwent, buf, sizeof(buf), &pwentp))
@@ -128,7 +132,11 @@ void ls_r(char path[]) {
         strcat(tmp, "/");
         strcat(tmp, file->d_name);
         //printf("%s\n", tmp);
-        stat(tmp, &sbuf);
+        if (stat(tmp, &sbuf) < 0) {
+            puts(tmp);
+            perror("stat error");
+            exit(1);
+        }
         if (sbuf.st_mode && S_ISDIR(sbuf.st_mode)) {
             ls(path);
             printf("\n%s:\n", tmp);
