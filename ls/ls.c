@@ -126,6 +126,11 @@ void ls_r(char path[]) {
     struct stat sbuf;
     char tmp[128];
     dir = opendir(path);
+    if (dir == NULL) {
+        puts(path);
+        perror("opendir error");
+        exit(1);
+    }
     while (file = readdir(dir)) {
         if (file->d_name[0] == '.') continue;
         strcpy(tmp, path);

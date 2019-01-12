@@ -1,5 +1,3 @@
-//Example code: A simple server side code, which echos back the received message. 
-//Handle multiple socket connections with select and fd_set on Linux  
 #include <stdio.h>
 #include <string.h>   //strlen  
 #include <stdlib.h>
@@ -16,6 +14,9 @@
 
 // telnet localhost port
 
+// Реализован чат. Сервер стартует командой "./a.out 8888", очередной клиент подключается командой "telnet localhost 8888" и получает приветственное сообщение.
+// Полученное сообщение сервер перенаправляет всем участникам, включая отправившего.
+
 int main(int argc, char *argv[]) {
     if (argc != 2) {
         fprintf(stderr, "USAGE: ./a.out port\n");
@@ -25,7 +26,7 @@ int main(int argc, char *argv[]) {
 
     int opt = TRUE;
     int master_socket, addrlen, new_socket, client_socket[30],
-            max_clients = 30, activity, i, valread, sd;
+            max_clients = 30, activity, i, j, valread, sd;
     int max_sd;
     struct sockaddr_in address;
 
@@ -35,7 +36,7 @@ int main(int argc, char *argv[]) {
     fd_set readfds;
 
     //a message  
-    char *message = "Hello, client! You successfully connected to the server!\r\n";
+    char *message = "Hello, client! You successfully connected to the server! You can send messages and all clients will see them, including yourself.\r\n";
 
     //initialise all client_socket[] to 0 so not checked  
     for (i = 0; i < max_clients; i++) {
@@ -50,8 +51,7 @@ int main(int argc, char *argv[]) {
 
     //set master socket to allow multiple connections ,  
     //this is just a good habit, it will work without this  
-    if (setsockopt(master_socket, SOL_SOCKET, SO_REUSEADDR, (char *) &opt,
-                   sizeof(opt)) < 0) {
+    if (setsockopt(master_socket, SOL_SOCKET, SO_REUSEADDR, (char *) &opt, sizeof(opt)) < 0) {
         perror("setsockopt");
         exit(EXIT_FAILURE);
     }
@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(port);
 
-    //bind the socket to localhost port 8888  
+    //bind the socket to localhost port 8888 (for example)
     if (bind(master_socket, (struct sockaddr *) &address, sizeof(address)) < 0) {
         perror("bind failed");
         exit(EXIT_FAILURE);
@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
                 max_sd = sd;
         }
 
-        //wait for an activity on one of the sockets , timeout is NULL ,  
+        //wait for an activity on one of the sockets ,timeout is NULL ,
         //so wait indefinitely  
         activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
 
@@ -111,16 +111,14 @@ int main(int argc, char *argv[]) {
         //If something happened on the master socket ,  
         //then its an incoming connection  
         if (FD_ISSET(master_socket, &readfds)) {
-            if ((new_socket = accept(master_socket,
-                                     (struct sockaddr *) &address, (socklen_t *) &addrlen)) < 0) {
+            if ((new_socket = accept(master_socket, (struct sockaddr *) &address, (socklen_t *) &addrlen)) < 0) {
                 perror("accept");
                 exit(EXIT_FAILURE);
             }
 
             //inform user of socket number - used in send and receive commands  
-            printf("New connection , socket fd is %d , ip is : %s , port : %d\n", new_socket,
-                   inet_ntoa(address.sin_addr), ntohs
-                           (address.sin_port));
+            printf("New connection , socket fd is %d, ip is : %s, port : %d\n", new_socket,
+                   inet_ntoa(address.sin_addr), ntohs(address.sin_port));
 
             //send new connection greeting message  
             if (send(new_socket, message, strlen(message), 0) != strlen(message)) {
@@ -146,26 +144,26 @@ int main(int argc, char *argv[]) {
             sd = client_socket[i];
 
             if (FD_ISSET(sd, &readfds)) {
-                //Check if it was for closing , and also read the  
+                //Check if it was for closing, and also read the
                 //incoming message  
                 if ((valread = read(sd, buffer, 1024)) == 0) {
                     //Somebody disconnected , get his details and print  
-                    getpeername(sd, (struct sockaddr *) &address, \
-                        (socklen_t *) &addrlen);
-                    printf("Host disconnected , ip %s , port %d \n",
-                           inet_ntoa(address.sin_addr), ntohs(address.sin_port));
+                    getpeername(sd, (struct sockaddr *) &address, (socklen_t *) &addrlen);
+                    printf("Host disconnected, ip %s, port %d \n", inet_ntoa(address.sin_addr), ntohs(address.sin_port));
 
                     //Close the socket and mark as 0 in list for reuse  
                     close(sd);
                     client_socket[i] = 0;
-                }
+                } else {
+                    //Echo back the message that came in for all connected clients
 
-                    //Echo back the message that came in
-                else {
                     //set the string terminating NULL byte on the end  
                     //of the data read  
                     buffer[valread] = '\0';
-                    send(sd, buffer, strlen(buffer), 0);
+                    for (j = 0; j < max_clients; j++) {
+                        sd = client_socket[j];
+                        send(sd, buffer, strlen(buffer), 0);
+                    }
                 }
             }
         }
