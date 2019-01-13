@@ -90,19 +90,6 @@ void add_to_common(node_t *from, node_t *to) {
     }
 }
 
-void free_list(node_t* head) {
-    node_t* tmp;
-
-    node_t *current = head;
-    current = current->next;
-    while (current != NULL)
-    {
-        tmp = current;
-        current = current->next;
-        free(tmp);
-    }
-}
-
 void parse_args(int argc, char *argv[]) {
     if (argc < 2) {
         fprintf(stderr, "USAGE: ./a.out number_of_threads(from 1), max_number(from 10)\n");
@@ -160,7 +147,6 @@ void *thread_func(void *params) {
     }
 
     add_to_common(local_simple_numbers, simple_numbers);
-//    free_list(local_simple_numbers);
 
     pthread_exit(0);
 }
