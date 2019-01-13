@@ -9,6 +9,15 @@
 #define SKIP 0
 #define STOP -1
 
+#define max(x,y) ( \
+    { __auto_type __x = (x); __auto_type __y = (y); \
+      __x > __y ? __x : __y; })
+
+#define min(x,y) ( \
+    { __auto_type __x = (x); __auto_type __y = (y); \
+      __x < __y ? __x : __y; })
+
+
 typedef struct {
     unsigned long long id;
     unsigned long long max_number;
