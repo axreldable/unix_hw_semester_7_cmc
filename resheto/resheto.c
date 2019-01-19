@@ -8,24 +8,14 @@
 // c99 resheto.c -pthread
 
 // time ./a.out 1 1000000
-// real    0m32,684s
-// user    0m32,679s
-// sys     0m0,005s
-
-// time ./a.out 5 1000000
-// real    0m22,689s
-// user    0m48,603s
-// sys     0m0,238s
+// real    0m11,483s
+// user    0m11,209s
+// sys     0m0,008s
 
 // time ./a.out 8 1000000
-// real    0m9,345s
-// user    0m28,986s
-// sys     0m0,237s
-
-// time ./a.out 20 1000000
-// real    0m11,093s
-// user    0m47,468s
-// sys     0m0,313s
+// real    0m2,663s
+// user    0m18,219s
+// sys     0m0,024s
 
 #define TRUE 1
 #define FALSE 0
@@ -37,20 +27,24 @@ typedef struct node {
     long long int val;
     struct node *next;
 } node_t;
-node_t *simple_numbers;
 
+typedef struct list {
+    struct node *begin;
+    struct node *end;
+    long long int count;
+} list_t;
 
-pthread_mutex_t mutex;
+list_t *simple_numbers;
 
 struct arg_struct {
     long long int start;
     long long int end;
+    list_t *local_prime_numbers;
 };
 
-void print_list(node_t *head) {
-    node_t *current = head;
+void print_list(list_t *list) {
+    node_t *current = list->begin;
 
-    current = current->next;
     while (current != NULL) {
         printf("%llu ", current->val);
         current = current->next;
@@ -58,32 +52,22 @@ void print_list(node_t *head) {
     printf("\n");
 }
 
-void push(node_t *head, long long int val) {
-    pthread_mutex_lock(&mutex);
-
-    node_t *current = head;
-    while (current->next != NULL && current->next->val < val) {
-        current = current->next;
-    }
-
-    if (current->next == NULL) {
-        current->next = malloc(sizeof(node_t));
-        current->next->val = val;
-        current->next->next = NULL;
+void push(list_t *list, long long int val) {
+    node_t *temp = malloc(sizeof(node_t));
+    temp->val = val;
+    temp->next = NULL;
+    if (!list->count){
+        list->begin = list->end = temp;
     } else {
-        node_t *tmp = malloc(sizeof(node_t));
-        tmp->val = val;
-        tmp->next = current->next;
-        current->next = tmp;
+        list->end->next = temp;
+        list->end = temp;
     }
-
-    pthread_mutex_unlock(&mutex);
+    list->count++;
 }
 
-void add_to_common(node_t *from, node_t *to) {
-    node_t *current = from;
+void add_to_common(list_t *from, list_t *to) {
+    node_t *current = from->begin;
 
-    current = current->next;
     while (current != NULL) {
         push(to, current->val);
         current = current->next;
@@ -114,7 +98,7 @@ void parse_args(int argc, char *argv[]) {
 }
 
 void init_simple_numbers() {
-    simple_numbers = malloc(sizeof(node_t));
+    simple_numbers = malloc(sizeof(list_t));
     push(simple_numbers, 2);
     push(simple_numbers, 3);
     push(simple_numbers, 5);
@@ -129,11 +113,9 @@ void *thread_func(void *params) {
 
 //    printf("Find prime numbers from=%llu, to=%llu.\n", from, to);
 
-    node_t * local_simple_numbers = malloc(sizeof(node_t));
     for(long long int i = from; i <= to; i++) {
-        node_t *current = simple_numbers;
+        node_t *current = simple_numbers->begin;
 
-        current = current->next;
         int is_prime = TRUE;
         while (current != NULL) {
             if (i % current->val == 0) {
@@ -142,11 +124,9 @@ void *thread_func(void *params) {
             current = current->next;
         }
         if (is_prime) {
-            push(local_simple_numbers, i);
+            push(args->local_prime_numbers, i);
         }
     }
-
-    add_to_common(local_simple_numbers, simple_numbers);
 
     pthread_exit(0);
 }
@@ -156,6 +136,11 @@ int add_new_simple_numbers_using_several_threads(long long int begin_number, lon
     pthread_attr_t attrs[number_of_threads];
     struct arg_struct params[number_of_threads];
 
+    list_t *local_pr_ar[number_of_threads];
+    for (int j = 0; j < number_of_threads; ++j) {
+        local_pr_ar[j] = malloc(sizeof(list_t));
+    }
+
     long long int chunkSize = (end_number - begin_number) / number_of_threads;
     for (int i = 0; i < number_of_threads; i++) {
         long long int start = i * chunkSize + begin_number + 1;
@@ -163,6 +148,7 @@ int add_new_simple_numbers_using_several_threads(long long int begin_number, lon
 
         params[i].start = start;
         params[i].end = end;
+        params[i].local_prime_numbers = local_pr_ar[i];
 
         pthread_attr_init(&attrs[i]);
         pthread_create(&th_ids[i], &attrs[i], thread_func, (void *) &params[i]);
@@ -170,6 +156,11 @@ int add_new_simple_numbers_using_several_threads(long long int begin_number, lon
 
     for (int i = 0; i < number_of_threads; i++) {
         pthread_join(th_ids[i], NULL);
+    }
+
+    for (int k = 0; k < number_of_threads; ++k) {
+//        print_list(local_pr_ar[k]);
+        add_to_common(local_pr_ar[k], simple_numbers);
     }
 
     return 0;
