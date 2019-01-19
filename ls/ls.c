@@ -79,7 +79,7 @@ void print_l(struct dirent *file) {
 
     if (stat(file->d_name, &sbuf) < 0) {
         puts(file->d_name);
-        perror("stat error");
+        printf("stat error: %s\n", file->d_name);
         exit(1);
     }
     print_perms(sbuf.st_mode);
@@ -128,6 +128,7 @@ void ls_r(char path[]) {
     dir = opendir(path);
     if (dir == NULL) {
         puts(path);
+        printf("opendir error: %s\n", path);
         perror("opendir error");
         exit(1);
     }
@@ -139,6 +140,7 @@ void ls_r(char path[]) {
         //printf("%s\n", tmp);
         if (stat(tmp, &sbuf) < 0) {
             puts(tmp);
+            printf("stat error: %s\n", tmp);
             perror("stat error");
             exit(1);
         }
