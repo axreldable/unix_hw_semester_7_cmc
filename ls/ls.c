@@ -15,6 +15,8 @@ int is_a = 0;
 int is_l = 0;
 int is_r = 0;
 
+#define SIZE 2048
+
 void print_perms(mode_t st) {
     char perms[11];
     if (st && S_ISREG(st)) perms[0] = '-';
@@ -69,19 +71,23 @@ int is_flags(const char arg[]) {
     }
 }
 
-void print_l(struct dirent *file) {
+void print_l(char *path, struct dirent *file) {
     struct stat sbuf;
-    char buf[128];
+    char buf[SIZE];
     struct passwd pwent, *pwentp;
     struct group grp, *grpt;
-    char datestring[256];
+    char datestring[SIZE];
     struct tm time;
+    char tmp[SIZE];
 
-    if (stat(file->d_name, &sbuf) < 0) {
-        puts(file->d_name);
-        printf("stat error: %s\n", file->d_name);
+    strcpy(tmp, path);
+    strcat(tmp, "/");
+    strcat(tmp, file->d_name);
+    if (stat(tmp, &sbuf) < 0) {
+        printf("\nstat error: %s\n", tmp);
         exit(1);
     }
+
     print_perms(sbuf.st_mode);
     printf(" %d", (int) sbuf.st_nlink);
     if (!getpwuid_r(sbuf.st_uid, &pwent, buf, sizeof(buf), &pwentp))
@@ -93,7 +99,8 @@ void print_l(struct dirent *file) {
         printf(" %s", grp.gr_name);
     else
         printf(" %d", sbuf.st_gid);
-    printf(" %5d", (int) sbuf.st_size);
+
+    printf(" %8llu", sbuf.st_size);
 
     localtime_r(&sbuf.st_mtime, &time);
     /* Get localized date string. */
@@ -105,17 +112,27 @@ void print_l(struct dirent *file) {
 void ls(char *path) {
     DIR *dir;
     struct dirent *file;
+
+    printf("\n%s:\n", path);
+
     dir = opendir(path);
+    if (dir == NULL) {
+        printf("opendir error: %s\n", path);
+        exit(1);
+    }
+
     while (file = readdir(dir)) {
         if (!is_a && file->d_name[0] == '.') {
             continue;
         }
         if (is_l) {
-            print_l(file);
+            print_l(path, file);
         } else {
             printf("%s  ", file->d_name);
         }
     }
+
+    fflush(stdout);
     free(file);
     free(dir);
 }
@@ -124,39 +141,52 @@ void ls_r(char path[]) {
     DIR *dir;
     struct dirent *file;
     struct stat sbuf;
-    char tmp[128];
+    char tmp[SIZE];
+
+    char (*dirs)[SIZE] = NULL;
+    int dirs_count = 0;
+
     dir = opendir(path);
     if (dir == NULL) {
-        puts(path);
         printf("opendir error: %s\n", path);
-        perror("opendir error");
         exit(1);
     }
+    ls(path);
+
     while (file = readdir(dir)) {
         if (file->d_name[0] == '.') continue;
         strcpy(tmp, path);
         strcat(tmp, "/");
         strcat(tmp, file->d_name);
-        //printf("%s\n", tmp);
+//        printf("%s\n", tmp);
         if (stat(tmp, &sbuf) < 0) {
-            puts(tmp);
-            printf("stat error: %s\n", tmp);
-            perror("stat error");
+            printf("\nstat error: %s\n", tmp);
             exit(1);
         }
         if (sbuf.st_mode && S_ISDIR(sbuf.st_mode)) {
-            ls(path);
-            printf("\n%s:\n", tmp);
-            ls_r(tmp);
+            if (strcmp(".", path) != 0 && strcmp("..", path) != 0) {
+                dirs = realloc(dirs, sizeof(*dirs) * (dirs_count + 1));
+                if (dirs == NULL) {
+                    perror("Alloc fail");
+                    exit(1);
+                }
+                strncpy(dirs[dirs_count], tmp, SIZE);
+                dirs_count++;
+            }
         }
     }
+
+    for (int i = 0; i < dirs_count; i++) {
+        ls_r(dirs[i]);
+    }
+
     free(file);
     free(dir);
 }
 
 int main(int argc, char *argv[]) {
-    char pathname[128];
-    getcwd(pathname, 128);
+    char pathname[SIZE];
+    getcwd(pathname, SIZE);
     if (argc == 1) { // ls
         ls(pathname);
     } else if (argc == 2) { // ls some
@@ -168,11 +198,7 @@ int main(int argc, char *argv[]) {
                 ls(pathname);
             }
         } else {
-            if (is_r) {
-                ls_r(argv[1]);
-            } else {
-                ls(argv[1]);
-            }
+            ls(argv[1]);
         }
     } else { // ls some some...
         int i = 1;
