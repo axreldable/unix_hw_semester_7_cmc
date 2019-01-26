@@ -85,7 +85,6 @@ void print_l(char *path, struct dirent *file) {
     strcat(tmp, file->d_name);
     if (stat(tmp, &sbuf) < 0) {
         printf("\nstat error: %s\n", tmp);
-        exit(1);
     }
 
     print_perms(sbuf.st_mode);
@@ -158,10 +157,8 @@ void ls_r(char path[]) {
         strcpy(tmp, path);
         strcat(tmp, "/");
         strcat(tmp, file->d_name);
-//        printf("%s\n", tmp);
         if (stat(tmp, &sbuf) < 0) {
             printf("\nstat error: %s\n", tmp);
-            exit(1);
         }
         if (sbuf.st_mode && S_ISDIR(sbuf.st_mode)) {
             if (strcmp(".", path) != 0 && strcmp("..", path) != 0) {
